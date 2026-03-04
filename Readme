@@ -1,1 +1,81 @@
-NL1 
+# PromptForge
+
+PromptForge is a production-oriented mobile-first platform for learning structured prompt engineering, built as an iOS + Vapor monorepo.
+
+## Monorepo Structure
+
+- `ios/PromptForge/` — SwiftUI iOS app (MVVM, Combine, StoreKit 2).
+- `backend/PromptForgeServer/` — Vapor backend with JWT auth, PostgreSQL, modular LLM service.
+- `db/schema.sql` — canonical PostgreSQL schema.
+- `db/sample_lessons.sql` — seed lesson/module records for Free/Pro/Research tiers.
+- `docs/deployment.md` — backend and iOS deployment guide.
+
+## iOS Architecture
+
+- **Frameworks:** SwiftUI, Combine, StoreKit 2.
+- **Pattern:** Clean MVVM + service abstractions.
+- **Core app layers:**
+  - `App/` app state, root navigation, tabs.
+  - `Models/` shared domain models.
+  - `Services/` `LLMService`, `LessonManager`, `SubscriptionManager`.
+  - `ViewModels/` analyzer/abstraction/learning logic.
+  - `Features/` auth, learning hub, prompt analyzer, abstraction trainer, tutor/debugger, subscriptions.
+
+## Backend Architecture
+
+- **Framework:** Vapor 4 + Fluent + PostgreSQL driver.
+- **Security:** JWT auth, rate limiting middleware, server-side LLM access.
+- **Routes:**
+  - `POST /auth/register`
+  - `POST /auth/login`
+  - `GET /users/me`
+  - `GET /lessons?tier=free|pro|research`
+  - `POST /prompt/analyze`
+  - `POST /prompt/reverse-debug`
+  - `POST /abstraction/transform`
+  - `POST /subscription/validate`
+  - `POST /tutor/reply`
+
+## OpenAI Integration
+
+`Sources/App/Services/LLMService.swift` defines a modular `LLMServiceProtocol` abstraction.
+Current implementation is deterministic placeholder logic; wire in OpenAI API calls by swapping internals while preserving protocol shape.
+
+## StoreKit 2 Subscriptions
+
+`SubscriptionManager` supports entitlement refresh for:
+- `com.promptforge.pro`
+- `com.promptforge.research`
+
+Free tier usage constraints should be enforced both on-device UX and server-side using `usage_tracking` table + middleware.
+
+## Getting Started
+
+### Backend
+
+```bash
+cd backend/PromptForgeServer
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/promptforge
+export JWT_SECRET=change-me
+swift package resolve
+swift run Run
+```
+
+### Database
+
+```bash
+psql "$DATABASE_URL" -f db/schema.sql
+psql "$DATABASE_URL" -f db/sample_lessons.sql
+```
+
+### iOS
+
+1. Open `ios/PromptForge` in Xcode as a SwiftUI app target.
+2. Set backend URL in feature initializers (currently `https://api.promptforge.app`).
+3. Configure StoreKit products in App Store Connect + StoreKit configuration file for local testing.
+
+## SaaS Expansion Readiness
+
+- Vapor routes are API-first and reusable for future web frontend.
+- `LLMServiceProtocol` is model-provider agnostic (multi-model support).
+- Clear module boundaries support enterprise analytics dashboards and plugin marketplace evolution.
